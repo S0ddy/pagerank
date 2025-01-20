@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import re
@@ -15,10 +16,10 @@ def main():
     print(f"PageRank Results from Sampling (n = {SAMPLES})")
     for page in sorted(ranks):
         print(f"  {page}: {ranks[page]:.4f}")
-    # ranks = iterate_pagerank(corpus, DAMPING)
-    # print(f"PageRank Results from Iteration")
-    # for page in sorted(ranks):
-    #     print(f"  {page}: {ranks[page]:.4f}")
+    ranks = iterate_pagerank(corpus, DAMPING)
+    print(f"PageRank Results from Iteration")
+    for page in sorted(ranks):
+        print(f"  {page}: {ranks[page]:.4f}")
 
 
 def crawl(directory):
@@ -94,7 +95,6 @@ def sample_pagerank(corpus, damping_factor, n):
     #get a random page from corpus
     page = random.choice(list(corpus.keys()))
     clicks = dict()
-    # page = '1.html'
     clicks[page] = clicks.get(page, 0) + 1
 
     #get my first transition
@@ -125,13 +125,50 @@ def iterate_pagerank(corpus, damping_factor):
     PageRank values should sum to 1.
     """
     
-    #get a page from corpus
-    page = '3.html'
+    result = dict()
 
-    new_corpus = transition_model(corpus, page, damping_factor)
+    assign_initial_rank(corpus, result)
+    recursive_page_rank(corpus, result, damping_factor)
 
-    print("iterate_pagerank")
+    return result
 
+def assign_initial_rank(corpus, result):
+    num_of_pages = len(corpus.values())
+    init_page_rank = 1 / num_of_pages
+
+    for key in corpus.keys():
+        result[key] = init_page_rank
+
+def recursive_page_rank(corpus, result, damping_factor):
+    num_of_pages = len(corpus.keys())
+    chance_of_random_page = (1 - damping_factor) / num_of_pages
+
+    page = random.choices(list(result.keys()), list(result.values()))[0]
+    get_page_rank(corpus, result, damping_factor, page, chance_of_random_page, 0)
+
+def get_page_rank(corpus, result, damping_factor, page, chance_of_random_page, i):
+    rank = result.get(page)
+    if i < 20:
+        i += 1
+        sum_from_formula = 0
+        links = corpus.get(page)
+
+        # A page that has no links at all should be interpreted as having one link for 
+        # every page in the corpus (including itself).
+        if not links:
+            links = list(corpus.keys())
+
+        # for link in links:
+        #     sum_from_formula += result.get(link) / len(links)
+
+
+        for link in links:
+            sum_from_formula += get_page_rank(corpus, result, damping_factor, link, chance_of_random_page, i) / len(links)
+
+        rank = chance_of_random_page + damping_factor * sum_from_formula
+        result[page] = rank
+
+    return rank
 
 if __name__ == "__main__":
     main()
