@@ -11,14 +11,14 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("Usage: python pagerank.py corpus")
     corpus = crawl(sys.argv[1])
-    # ranks = sample_pagerank(corpus, DAMPING, SAMPLES)
-    # print(f"PageRank Results from Sampling (n = {SAMPLES})")
-    # for page in sorted(ranks):
-    #     print(f"  {page}: {ranks[page]:.4f}")
-    ranks = iterate_pagerank(corpus, DAMPING)
-    print(f"PageRank Results from Iteration")
+    ranks = sample_pagerank(corpus, DAMPING, SAMPLES)
+    print(f"PageRank Results from Sampling (n = {SAMPLES})")
     for page in sorted(ranks):
         print(f"  {page}: {ranks[page]:.4f}")
+    # ranks = iterate_pagerank(corpus, DAMPING)
+    # print(f"PageRank Results from Iteration")
+    # for page in sorted(ranks):
+    #     print(f"  {page}: {ranks[page]:.4f}")
 
 
 def crawl(directory):
@@ -91,8 +91,29 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    print("sample_pagerank")
+    #get a random page from corpus
+    page = random.choice(list(corpus.keys()))
+    clicks = dict()
+    # page = '1.html'
+    clicks[page] = clicks.get(page, 0) + 1
 
+    #get my first transition
+    transition = transition_model(corpus, page, damping_factor)
+
+    for i in range(n):
+        #go into the next transition based on the previous transition
+        page = random.choices(list(transition.keys()), list(transition.values()))[0]
+        clicks[page] = clicks.get(page, 0) + 1
+        transition = transition_model(corpus, page, damping_factor)
+
+    #the sum of all clicks should be 1
+    amount_of_clicks = sum(clicks.values())
+    
+    for key, value in clicks.items():
+        clicks[key] = value/amount_of_clicks
+    
+    #return clicks
+    return clicks
 
 def iterate_pagerank(corpus, damping_factor):
     """
