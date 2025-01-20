@@ -144,29 +144,37 @@ def recursive_page_rank(corpus, result, damping_factor):
     chance_of_random_page = (1 - damping_factor) / num_of_pages
 
     page = random.choices(list(result.keys()), list(result.values()))[0]
-    get_page_rank(corpus, result, damping_factor, page, chance_of_random_page, 0)
+    get_page_rank(corpus, result, damping_factor, page, chance_of_random_page)
 
-def get_page_rank(corpus, result, damping_factor, page, chance_of_random_page, i):
-    rank = result.get(page)
-    if i < 20:
-        i += 1
-        sum_from_formula = 0
-        links = corpus.get(page)
+def get_page_rank(corpus, result, damping_factor, page, chance_of_random_page):
+    sum_from_formula = 0
+    links = set()
 
-        # A page that has no links at all should be interpreted as having one link for 
-        # every page in the corpus (including itself).
-        if not links:
-            links = list(corpus.keys())
+    # list of keys that points to our page
+    for key, values in corpus.items():
+        for value in values:
+            if value == page:
+                links.add(key)
 
-        # for link in links:
-        #     sum_from_formula += result.get(link) / len(links)
+    # A page that has no links at all should be interpreted as having one link for 
+    # every page in the corpus (including itself).
+    if not links:
+        links = list(corpus.keys())
 
+    # adjust rank
+    for link in links:
+        sum_from_formula += result.get(link) / len(corpus.get(link))
 
+    rank = chance_of_random_page + damping_factor * sum_from_formula
+    old_rank = result.get(page)
+    result[page] = rank
+
+    if abs(rank - old_rank) > 0.005:
         for link in links:
-            sum_from_formula += get_page_rank(corpus, result, damping_factor, link, chance_of_random_page, i) / len(links)
-
-        rank = chance_of_random_page + damping_factor * sum_from_formula
-        result[page] = rank
+            sum_from_formula += get_page_rank(corpus, result, damping_factor, link, chance_of_random_page) / len(corpus.get(link))
+            rank = chance_of_random_page + damping_factor * sum_from_formula
+   
+    result[page] = rank
 
     return rank
 
