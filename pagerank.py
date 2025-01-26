@@ -1,3 +1,4 @@
+from decimal import Decimal, getcontext
 import math
 import os
 import random
@@ -128,9 +129,8 @@ def iterate_pagerank(corpus, damping_factor):
     result = dict()
 
     assign_initial_rank(corpus, result)
-    recursive_page_rank(corpus, result, damping_factor)
 
-    return result
+    return recursive_page_rank(corpus, result, damping_factor)
 
 def assign_initial_rank(corpus, result):
     num_of_pages = len(corpus.values())
@@ -141,42 +141,59 @@ def assign_initial_rank(corpus, result):
 
 def recursive_page_rank(corpus, result, damping_factor):
     num_of_pages = len(corpus.keys())
+    # getcontext().prec = 4
     chance_of_random_page = (1 - damping_factor) / num_of_pages
 
-    page = random.choices(list(result.keys()), list(result.values()))[0]
-    get_page_rank(corpus, result, damping_factor, page, chance_of_random_page)
-
-def get_page_rank(corpus, result, damping_factor, page, chance_of_random_page):
-    sum_from_formula = 0
-    links = set()
-
-    # list of keys that points to our page
-    for key, values in corpus.items():
-        for value in values:
-            if value == page:
-                links.add(key)
-
+    # page = random.choices(list(result.keys()), list(result.values()))[0]
+    # page = '1.html'
+    # get_page_rank(corpus, result, damping_factor, page, chance_of_random_page)
+    
     # A page that has no links at all should be interpreted as having one link for 
     # every page in the corpus (including itself).
-    if not links:
-        links = list(corpus.keys())
+    for key, values in corpus.items():
+        if not values:
+            corpus[key] = set(corpus.keys())
 
-    # adjust rank
-    for link in links:
-        sum_from_formula += result.get(link) / len(corpus.get(link))
+    return update_page_rank(corpus, result, damping_factor, chance_of_random_page)
 
-    rank = chance_of_random_page + damping_factor * sum_from_formula
-    old_rank = result.get(page)
-    result[page] = rank
+def update_page_rank(corpus, result, damping_factor, chance_of_random_page):
+    new_result = dict()
+    repeat = False
+    #iterate over each page and update rank
+    for page in corpus.keys():
+        sum_from_formula = 0
+        links = set()
+        # list of keys that points to our page
+        for key, values in corpus.items():
+            for value in values:
+                if value == page:
+                    links.add(key)
 
-    if abs(rank - old_rank) > 0.005:
+        # A page that has no links at all should be interpreted as having one link for 
+        # every page in the corpus (including itself).
+        # if not links:
+        #     links = list(corpus.keys())
+        
         for link in links:
-            sum_from_formula += get_page_rank(corpus, result, damping_factor, link, chance_of_random_page) / len(corpus.get(link))
-            rank = chance_of_random_page + damping_factor * sum_from_formula
-   
-    result[page] = rank
+            # if corpus.get(link):
+            sum_from_formula += result.get(link) / len(corpus.get(link))
+            # else:
+            #     sum_from_formula += result.get(link) / len(corpus.keys())
 
-    return rank
+        new_rank = chance_of_random_page + damping_factor * sum_from_formula
+
+        new_result[page] = new_rank
+    
+    for key in new_result.keys():
+        if abs(new_result[key] - result[key]) > 0.001:
+            repeat = True
+    
+    result = new_result
+
+    if repeat:
+        result = update_page_rank(corpus, result, damping_factor, chance_of_random_page)
+
+    return result
 
 if __name__ == "__main__":
     main()
