@@ -1,5 +1,3 @@
-from decimal import Decimal, getcontext
-import math
 import os
 import random
 import re
@@ -60,29 +58,29 @@ def transition_model(corpus, page, damping_factor):
     a link at random chosen from all pages in the corpus.
     """
 
-    #create dictionary
+    # create dictionary
     transition = dict()
 
-    #if page has links
+    # if page has links
     links = corpus.get(page)
 
     if links:
-        for link in links: #loop over children for this page
-            transition[link] = damping_factor/len(links) #devide the damping_factor equally across all children 
-        for key in corpus: #loop over all corpus keys
-            #add (1-damping_factor) equally across all keys 
+        for link in links:
+            # devide the damping_factor equally across all children 
+            transition[link] = damping_factor/len(links) 
+        for key in corpus: 
+            # add (1-damping_factor) equally across all keys 
             if key in transition: 
                 transition[key] = transition[key] + ((1-damping_factor)/len(corpus))
             else:
                 transition[key] = (1-damping_factor)/len(corpus)
-    else: #otherwise
-        for key in corpus:#loop over all keys 
-            #add chances equally across all keys
+    else:
+        for key in corpus:
+            # add chances equally across all keys
             transition[key] = 1/len(corpus)
     
     return transition
     
-
 
 def sample_pagerank(corpus, damping_factor, n):
     """
@@ -93,28 +91,28 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    #get a random page from corpus
+    # get a random page from corpus
     page = random.choice(list(corpus.keys()))
     clicks = dict()
     clicks[page] = clicks.get(page, 0) + 1
 
-    #get my first transition
+    # get my first transition
     transition = transition_model(corpus, page, damping_factor)
 
     for i in range(n):
-        #go into the next transition based on the previous transition
+        # go into the next transition based on the previous transition
         page = random.choices(list(transition.keys()), list(transition.values()))[0]
         clicks[page] = clicks.get(page, 0) + 1
         transition = transition_model(corpus, page, damping_factor)
 
-    #the sum of all clicks should be 1
+    # the sum of all clicks should be 1
     amount_of_clicks = sum(clicks.values())
     
     for key, value in clicks.items():
         clicks[key] = value/amount_of_clicks
     
-    #return clicks
     return clicks
+
 
 def iterate_pagerank(corpus, damping_factor):
     """
@@ -132,6 +130,7 @@ def iterate_pagerank(corpus, damping_factor):
 
     return recursive_page_rank(corpus, result, damping_factor)
 
+
 def assign_initial_rank(corpus, result):
     num_of_pages = len(corpus.values())
     init_page_rank = 1 / num_of_pages
@@ -139,14 +138,10 @@ def assign_initial_rank(corpus, result):
     for key in corpus.keys():
         result[key] = init_page_rank
 
+
 def recursive_page_rank(corpus, result, damping_factor):
     num_of_pages = len(corpus.keys())
-    # getcontext().prec = 4
     chance_of_random_page = (1 - damping_factor) / num_of_pages
-
-    # page = random.choices(list(result.keys()), list(result.values()))[0]
-    # page = '1.html'
-    # get_page_rank(corpus, result, damping_factor, page, chance_of_random_page)
     
     # A page that has no links at all should be interpreted as having one link for 
     # every page in the corpus (including itself).
@@ -156,10 +151,12 @@ def recursive_page_rank(corpus, result, damping_factor):
 
     return update_page_rank(corpus, result, damping_factor, chance_of_random_page)
 
+
 def update_page_rank(corpus, result, damping_factor, chance_of_random_page):
     new_result = dict()
     repeat = False
-    #iterate over each page and update rank
+
+    # iterate over each page and update rank
     for page in corpus.keys():
         sum_from_formula = 0
         links = set()
@@ -168,17 +165,9 @@ def update_page_rank(corpus, result, damping_factor, chance_of_random_page):
             for value in values:
                 if value == page:
                     links.add(key)
-
-        # A page that has no links at all should be interpreted as having one link for 
-        # every page in the corpus (including itself).
-        # if not links:
-        #     links = list(corpus.keys())
         
         for link in links:
-            # if corpus.get(link):
             sum_from_formula += result.get(link) / len(corpus.get(link))
-            # else:
-            #     sum_from_formula += result.get(link) / len(corpus.keys())
 
         new_rank = chance_of_random_page + damping_factor * sum_from_formula
 
@@ -194,6 +183,7 @@ def update_page_rank(corpus, result, damping_factor, chance_of_random_page):
         result = update_page_rank(corpus, result, damping_factor, chance_of_random_page)
 
     return result
+
 
 if __name__ == "__main__":
     main()
